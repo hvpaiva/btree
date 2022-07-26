@@ -1,4 +1,7 @@
-{-# LANGUAGE GADTs, DataKinds, KindSignatures, ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -17,33 +20,33 @@
 module Data.BTree (
              -- * BTree type
                BTree
-               
+
              -- * Constructors
              , empty
              , fromList
-             
+
              -- * Operations
              , insert
              , delete
              , search
              , member
              , height
-             
+
              -- * Traversal
              , preorder
              , inorder
              , postorder
-             
+
              -- * Ascii Drawing
              , draw
 ) where
 
-import Control.Applicative ()
-import Data.Monoid ()
-import Data.Foldable (Foldable(..),toList)  
-import Data.Traversable ()
-import Data.Maybe (isJust)
-import qualified Data.List as L
+import           Control.Applicative ()
+import           Data.Foldable       (Foldable (..), toList)
+import qualified Data.List           as L
+import           Data.Maybe          (isJust)
+import           Data.Monoid         ()
+import           Data.Traversable    ()
 
 -- $setup
 -- Allow the use of some BTree functions in doctests.
@@ -82,7 +85,7 @@ A @'BTree' 'Int'@ may be represented as:
       1   3   5   7         <-- (1) internal nodes
      / \ / \ / \ / \
     .  ..  ..  ..   .       <-- (0) leafs
-    
+
 >>> t
 fromList [1,2,3,4,5,6,7]
 
@@ -95,21 +98,21 @@ fromList [1,2,3,4,5,6,7,8]
 
 Which represents:
 
-             4              
+             4
          /      \
-        2       6           
+        2       6
        / \     / \
-      1   3   5   7, 8     
+      1   3   5   7, 8
      / \ / \ / \ / \  \
     .  ..  ..  ..   .  .
-    
-The complexity of the operations: 
-  
+
+The complexity of the operations:
+
    Algorithm		Medium Case     Worst Case
    Search		    O(log n)	      O(log n)
    Insert 		  O(log n)	      O(log n)
    Delete 		  O(log n)	      O(log n)
-   
+
 
 -}
 data BTree a where
@@ -143,11 +146,11 @@ data Tree n a where
 --   The insertion can be done in two ways:
 --   - Keep: The node keeps the element in itself.
 --   - Push: Overflow occurs and the element is pushed to the parent.
--- 
---   Note: This is a function that gets a internal B-Tree and converts to its 
+--
+--   Note: This is a function that gets a internal B-Tree and converts to its
 --   polimorphic representation of Tree.
--- 
---   The @t@ represents the polimorphic representation of Tree, the @n@ represents the height of the B-Tree 
+--
+--   The @t@ represents the polimorphic representation of Tree, the @n@ represents the height of the B-Tree
 --   and the @a@ the actual element.
 --   This prevents the needs of the internal B-Tree beeing parsed earlyer than when presented to the client.
 type Keep t n a = Tree n a -> t
@@ -157,11 +160,11 @@ type Keep t n a = Tree n a -> t
 --   The insertion can be done in two ways:
 --   - Keep: The node keeps the element in itself.
 --   - Push: Overflow occurs and the element is pushed to the parent.
--- 
---   Note: This is a function that gets a internal B-Tree and converts to its 
+--
+--   Note: This is a function that gets a internal B-Tree and converts to its
 --   polimorphic representation of Tree.
--- 
---   The @t@ represents the polimorphic representation of Tree, the @n@ represents the height of the B-Tree 
+--
+--   The @t@ represents the polimorphic representation of Tree, the @n@ represents the height of the B-Tree
 --   and the @a@ the actual element.
 --   This prevents the needs of the internal B-Tree beeing parsed earlyer than when presented to the client.
 type Push t n a = Tree n a -> a -> Tree n a -> t
@@ -178,7 +181,7 @@ insert x (BTree tree) = insert' tree BTree $ \a b c -> BTree (branch a b c)
       insert' :: forall n t. Tree n a -> Keep t n a -> Push t n a -> t
       insert' Leaf = \_ push -> push Leaf x Leaf -- insert in a leaf is always a overflow, so it pushes.
       insert' (Branch n) = i n
-        where 
+        where
           i :: forall p m. ('Succ p ~ m) => Node p a -> Keep t m a -> Push t m a -> t
           i (Subtree' a b c d e) keep push = select' x b d xltb xeqb xbtw xeqd xgtd
             where
@@ -194,22 +197,22 @@ insert x (BTree tree) = insert' tree BTree $ \a b c -> BTree (branch a b c)
               xltb = insert' a (\k -> keep (branch k b c)) (\p q r -> keep (branch' p q r b c))
               xgtb = insert' c (keep . branch a b) (\p q r -> keep (branch' a b p q r))
               xeqb = keep (branch a x c)
- 
+
 -- | The deletion Pull type.
 --   It represents the action of pull an element to an upper branch when underflow, and merging the nodes
 --   if needed.
--- 
---   Note: This is a function that takes a Shrunk type and converts it to the 
+--
+--   Note: This is a function that takes a Shrunk type and converts it to the
 --   polimorphic representation of Tree, merging it nodes and pulling up the elements if underflow.
--- 
---   The @t@ represents the polimorphic representation of Tree, the @n@ represents the height of the B-Tree 
+--
+--   The @t@ represents the polimorphic representation of Tree, the @n@ represents the height of the B-Tree
 --   and the @a@ the actual element.
 --   This prevents the needs of the internal B-Tree beeing parsed earlyer than when presented to the client.
 type Pull t n a = Shrunk n a -> t
 
 -- | The Shrunk type.
 --   Represents the action when two nodes are merged into one. It's a "partial" type,
---   meaning that it's not a full representation of a merged Node, but the argument 
+--   meaning that it's not a full representation of a merged Node, but the argument
 --   for the Pull when the Node is fully merged.
 --   The @n@ represents the height of the B-Tree and the @a@ the actual element.
 data Shrunk (n :: Natural) a where
@@ -262,11 +265,11 @@ delete x (BTree tree) = find tree BTree shrink
     mrg3r :: forall p t. Keep t ('Succ p) a -> Tree p a -> a -> Tree p a -> a -> Shrunk p a -> t
     mrg3r keep a b (Branch (Subtree' c d e f g)) h (H i) = keep (branch' a b (branch c d e) f (branch g h i))
     mrg3r keep a b (Branch (Subtree c d e)) f (H g) = keep (branch a b (branch' c d e f g))
- 
+
 -- | Search an element in a B-Tree.
 search :: forall a. Ord a => a -> BTree a -> Maybe a
-search x (BTree tree) = search' tree 
-  where 
+search x (BTree tree) = search' tree
+  where
     search' :: forall n. Tree n a -> Maybe a
     search' Leaf = Nothing
     search' (Branch (Subtree a b c)) = select x b xltb xeqb xgtb
@@ -283,7 +286,7 @@ search x (BTree tree) = search' tree
         xbtw = search' c
         xeqd = Just x
         xgtd = search' e
-              
+
 -- | A empty B-Tree.
 empty :: BTree a
 empty = BTree Leaf
@@ -318,9 +321,9 @@ inorder :: forall a. BTree a -> [a]
 inorder (BTree tree) = pre tree
   where
     pre :: Tree n a -> [a]
-    pre (Branch (Subtree a b c)) = pre a ++ [b] ++ pre c
+    pre (Branch (Subtree a b c))      = pre a ++ [b] ++ pre c
     pre (Branch (Subtree' a b c d e)) = pre a ++ [b] ++ pre c ++ [d] ++ pre e
-    pre Leaf = []
+    pre Leaf                          = []
 
 -- | Return the B-Tree as a list in a post-order traversal.
 --   The post-order traversal runs through the elements of the B-Tree in the following order:
@@ -344,9 +347,9 @@ postorder :: forall a. BTree a -> [a]
 postorder (BTree tree) = pos tree
   where
     pos :: Tree n a -> [a]
-    pos (Branch (Subtree a b c)) = pos a ++ pos c ++ [b]
+    pos (Branch (Subtree a b c))      = pos a ++ pos c ++ [b]
     pos (Branch (Subtree' a b c d e)) = pos a ++ pos c ++ pos e ++ [b] ++ [d]
-    pos Leaf = []
+    pos Leaf                          = []
 
 -- | Return the B-Tree as a list in a pre-order traversal.
 --   The pre-order traversal runs through the elements of the B-Tree in the following order:
@@ -370,10 +373,10 @@ preorder :: forall a. BTree a -> [a]
 preorder (BTree tree) = ino tree
   where
     ino :: Tree n a -> [a]
-    ino (Branch (Subtree a b c)) = [b] ++ ino a ++ ino c
+    ino (Branch (Subtree a b c))      = [b] ++ ino a ++ ino c
     ino (Branch (Subtree' a b c d e)) = [b] ++ [d] ++ ino a ++ ino c ++ ino e
-    ino Leaf = []
- 
+    ino Leaf                          = []
+
 -- | The height of the B-Tree.
 --   The height of a B-Tree is the number of levels in the B-Tree.
 --
@@ -389,13 +392,13 @@ height :: forall a. BTree a -> Int
 height (BTree tree) = height' tree
   where
     height' :: Tree n a -> Int
-    height' (Branch (Subtree a _ _)) = 1 + height' a        -- As thet are equidistant, the height of a subtree is always the same as the others.
+    height' (Branch (Subtree a _ _))      = 1 + height' a        -- As thet are equidistant, the height of a subtree is always the same as the others.
     height' (Branch (Subtree' a _ _ _ _)) = 1 + height' a   -- So we only need to check it once.
-    height' Leaf = 0
- 
+    height' Leaf                          = 0
+
 -- | Draws the B-Tree.
 --   The output is a string of the form:
---   - Each Leaf is represented by a '.'      
+--   - Each Leaf is represented by a '.'
 --   - Each Node is represented as (left, value, right) where left and right are the left and right subtrees.
 --
 --   So, the current list [1, 2, 3, 4, 5, 6, 7] will be represented as:
@@ -417,16 +420,16 @@ instance Foldable BTree where
       foldm f (BTree t) = fm t
         where
           fm :: forall n. Tree n a -> m
-          fm (Branch (Subtree a b c)) = fm a <> f b <> fm c
+          fm (Branch (Subtree a b c))      = fm a <> f b <> fm c
           fm (Branch (Subtree' a b c d e)) = fm a <> f b <> fm c <> f d <> fm e
-          fm Leaf = mempty   
+          fm Leaf                          = mempty
 
 instance Show a => Show (BTree a) where
   showsPrec n t = showParen (n > 10) $ showString "fromList " . shows (toList t)
-  
+
 ---- Internal Utility Functions ----------------------------------------------------------------------------------------
-      
--- | Utility function to select the correct element given a comparison of two other elements.  
+
+-- | Utility function to select the correct element given a comparison of two other elements.
 select :: Ord a => a -> a -> p -> p -> p -> p
 select x y lt eq gt = case compare x y of { LT -> lt; EQ -> eq; GT -> gt }
 
