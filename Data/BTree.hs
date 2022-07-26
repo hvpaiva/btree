@@ -424,7 +424,7 @@ instance Foldable BTree where
 instance Show a => Show (BTree a) where
   showsPrec n t = showParen (n > 10) $ showString "fromList " . shows (toList t)
   
----- Utilitie Functions ------------------------------------------------------------------------------------------------      
+---- Internal Utility Functions ----------------------------------------------------------------------------------------
       
 -- | Utility function to select the correct element given a comparison of two other elements.  
 select :: Ord a => a -> a -> p -> p -> p -> p
