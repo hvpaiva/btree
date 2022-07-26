@@ -32,3 +32,6 @@ cabal.project.local~
 .ghc.environment.*
 
 /.idea/
+/cache/
+/build*/
+/package*/

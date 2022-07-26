@@ -1,16 +1,40 @@
 {-# LANGUAGE GADTs, DataKinds, KindSignatures, ScopedTypeVariables #-}
 
-module BTree (BTree
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Data.BTree
+-- Copyright   :  (c) Highlander Paiva 2022
+-- License     :  BSD-style (see the file libraries/LICENSE)
+--
+-- Maintainer  :  hvpaiva@icloud.com
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- The BTree type, and associated operations.
+--
+-----------------------------------------------------------------------------
+
+module BTree (
+             -- * BTree type
+               BTree
+               
+             -- * Constructors
              , empty
+             , fromList
+             
+             -- * Operations
              , insert
              , delete
              , search
              , member
-             , depth
-             , fromList
+             , height
+             
+             -- * Traversal
              , preorder
              , inorder
              , postorder
+             
+             -- * Ascii Drawing
              , draw
 ) where
 
@@ -21,31 +45,73 @@ import Data.Traversable ()
 import Data.Maybe (isJust)
 import qualified Data.List as L
 
--- | An order 3 B-Tree is a self-balancing tree as its nodes are sorted in the inorder traversal.
---   A Node is a set of elements pointing to its children.
---   A Leaf has no children and nothing in itself.
---
---   A 3 order B-tree is a tree which satisfies the following properties:
---   - {one, two} elements per node and {two, three} subtrees.
---   - A leaf contains nothing.
---   - Every leaf is equidistant from the root.
---   - Subtrees must have the same height.
---   - Data are ordered left to right.
---
---   A B-Tree of [1, 2, 3, 4, 5, 6, 7] is represented as:
---
---             4              <-- (3) root
---         /      \
---        2       6           <-- (2) internal nodes
---       / \     / \
---      1   3   5   7         <-- (1) internal nodes
---     / \ / \ / \ / \
---    .  ..  ..  ..   .       <-- (0) leafs
---
---   Algorithm		Medium Case     Worst Case
---   Search		    O(log n)	      O(log n)
---   Insert 		  O(log n)	      O(log n)
---   Delete 		  O(log n)	      O(log n)
+-- $setup
+-- Allow the use of some BTree functions in doctests.
+-- >>> import Data.BTree ( insert, delete, search, fromList )
+
+{-
+-- just for testing
+import Test.QuickCheck
+-}
+
+{-|
+
+The 'BTree' type represents a tree using the b-tree algorithm.
+
+A @'BTree' a@ is a self-balancing tree as its nodes are sorted in the inorder traversal. The
+node is a set of elements pointing to its children, and a leaf has no children and nothing in itself.
+
+This implementation uses a order 3 'BTree', this means:
+- {one, two} elements per node and {two, three} subtrees.
+- A leaf contains nothing.
+- Every leaf is equidistant from the root.
+- Subtrees must have the same height.
+- Data are ordered left to right.
+
+==== __Examples __
+
+A @'BTree' 'Int'@ may be represented as:
+
+>>> let t = fromList [1,2,3,4,5,6,7]
+
+
+             4              <-- (3) root
+         /      \
+        2       6           <-- (2) internal nodes
+       / \     / \
+      1   3   5   7         <-- (1) internal nodes
+     / \ / \ / \ / \
+    .  ..  ..  ..   .       <-- (0) leafs
+    
+>>> t
+fromList [1,2,3,4,5,6,7]
+
+>>> let n = insert 8 t
+>>> n
+fromList [1,2,3,4,5,6,7,8]
+
+>>> draw n
+"(((. 1 .) 2 (. 3 .)) 4 ((. 5 .) 6 (. 7 . 8 .)))"
+
+Which represents:
+
+             4              
+         /      \
+        2       6           
+       / \     / \
+      1   3   5   7, 8     
+     / \ / \ / \ / \  \
+    .  ..  ..  ..   .  .
+    
+The complexity of the operations: 
+  
+   Algorithm		Medium Case     Worst Case
+   Search		    O(log n)	      O(log n)
+   Insert 		  O(log n)	      O(log n)
+   Delete 		  O(log n)	      O(log n)
+   
+
+-}
 data BTree a where
   BTree :: Tree n a -> BTree a
 
@@ -99,15 +165,13 @@ type Keep t n a = Tree n a -> t
 --   and the @a@ the actual element.
 --   This prevents the needs of the internal B-Tree beeing parsed earlyer than when presented to the client.
 type Push t n a = Tree n a -> a -> Tree n a -> t
-  
--- | A branch constructor. Convenient method for creating a branch with a single element and two subtrees.
-branch :: Tree n a -> a -> Tree n a -> Tree ('Succ n) a
-branch a b c = Branch (Subtree a b c)
--- | A branch constructor. Convenient method for creating a branch with a two elements and three subtrees.
-branch' :: Tree n a -> a -> Tree n a -> a -> Tree n a -> Tree ('Succ n) a
-branch' a b c d e = Branch (Subtree' a b c d e)
 
 -- | Inserts an element into a B-Tree.
+--
+--   Algorithm		Medium Case     Worst Case
+--   Insert 		  O(log n)	      O(log n)
+--
+--   >>> insert 1 empty
 insert :: forall a. Ord a => a -> BTree a -> BTree a
 insert x (BTree tree) = insert' tree BTree $ \a b c -> BTree (branch a b c)
     where
@@ -310,24 +374,24 @@ preorder (BTree tree) = ino tree
     ino (Branch (Subtree' a b c d e)) = [b] ++ [d] ++ ino a ++ ino c ++ ino e
     ino Leaf = []
  
--- | The depth of the B-Tree.
---   The depth of a B-Tree is the number of levels in the B-Tree.
+-- | The height of the B-Tree.
+--   The height of a B-Tree is the number of levels in the B-Tree.
 --
---             4             <-- depth 3
+--             4             <-- height 3
 --         /      \
---        2       6          <-- depth 2
+--        2       6          <-- height 2
 --       / \     / \
---      1   3   5   7        <-- depth 1
+--      1   3   5   7        <-- height 1
 --     / \ / \ / \ / \
---    .  ..  ..  ..   .      <-- depth 0
+--    .  ..  ..  ..   .      <-- height 0
 --
-depth :: forall a. BTree a -> Int
-depth (BTree tree) = depth' tree
+height :: forall a. BTree a -> Int
+height (BTree tree) = height' tree
   where
-    depth' :: Tree n a -> Int
-    depth' (Branch (Subtree a _ _)) = 1 + depth' a        -- As thet are equidistant, the depth of a subtree is always the same as the others.
-    depth' (Branch (Subtree' a _ _ _ _)) = 1 + depth' a   -- So we only need to check it once.
-    depth' Leaf = 0
+    height' :: Tree n a -> Int
+    height' (Branch (Subtree a _ _)) = 1 + height' a        -- As thet are equidistant, the height of a subtree is always the same as the others.
+    height' (Branch (Subtree' a _ _ _ _)) = 1 + height' a   -- So we only need to check it once.
+    height' Leaf = 0
  
 -- | Draws the B-Tree.
 --   The output is a string of the form:
@@ -369,3 +433,11 @@ select x y lt eq gt = case compare x y of { LT -> lt; EQ -> eq; GT -> gt }
 -- | Utility function to select the correct element given a comparison of three other elements.
 select' :: Ord a => a -> a -> a -> p -> p -> p -> p -> p -> p
 select' x y z xlty xeqy xbtw xeqz xgtz = select x y xlty xeqy (select x z xbtw xeqz xgtz)
+
+-- | A branch constructor. Convenient method for creating a branch with a single element and two subtrees.
+branch :: Tree n a -> a -> Tree n a -> Tree ('Succ n) a
+branch a b c = Branch (Subtree a b c)
+
+-- | A branch constructor. Convenient method for creating a branch with a two elements and three subtrees.
+branch' :: Tree n a -> a -> Tree n a -> a -> Tree n a -> Tree ('Succ n) a
+branch' a b c d e = Branch (Subtree' a b c d e)
