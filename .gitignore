@@ -35,3 +35,4 @@ cabal.project.local~
 /cache/
 /build*/
 /package*/
+/doc/
