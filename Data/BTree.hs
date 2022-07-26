@@ -631,6 +631,3 @@ branch a b c = Branch (Subtree a b c)
 -- | A branch constructor. Convenient method for creating a branch with a two elements and three subtrees.
 branch' :: Tree n a -> a -> Tree n a -> a -> Tree n a -> Tree ('Succ n) a
 branch' a b c d e = Branch (Subtree' a b c d e)
-
-t' :: BTree Int
-t' = fromList [1,2,3,4,5,6,7]
