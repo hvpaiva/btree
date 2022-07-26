@@ -1,0 +1,22 @@
+name:                btree
+version:             0.1.0
+homepage:            https://github.com/hvpaiva/btree#readme
+license:             BSD3
+license-file:        LICENSE
+synopsis:            Concrete data type for a B tree algorithm.
+description:         Defines a data type, Tree, which is a B-Tree implementation of a Tree.
+author:              Highlander Paiva
+maintainer:          hvpaiva@icloud.com
+copyright:           2022 Highlander Paiva
+category:            Data, Tree
+stability:           stable
+build-type:          Simple
+cabal-version:       >=1.2
+extra-source-files:  README.md
+
+library
+  exposed-modules: Data.BTree
+  ghc-options:     -Wall
+  build-depends:
+    base >= 4.7 && < 5
+--    , containers

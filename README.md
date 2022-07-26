@@ -1,3 +1,4 @@
-# btree-algorithm
+# BTree
 
-[The algorithm file](src/BTree.hs)
+Concrete data type for a B-Tree algorithm.
+
