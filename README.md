@@ -31,6 +31,20 @@ The complexity of the main operations:
 | Delete    | O(log n)    | O(log n)     |
 | Search    | O(log n)    | O(log n)     |
 
+## Instalation
+
+```haskell
+$> cabal install btree
+```
+
+then you import the module:
+
+```haskell
+import qualified Data.BTree as T
+```
+
+> This module may use some common function names, so may be useful to import as qualified.
+
 ## Constructors
 
 ### empty :: BTree a #
@@ -290,3 +304,8 @@ Which is an inline representation of the BTree.
 -- Stability   :  experimental
 -- Portability :  portable
 ```
+
+## Roadmap
+
+- [ ] Make BTree instance of Monad
+- [ ] Make BTree instance of Applicative
