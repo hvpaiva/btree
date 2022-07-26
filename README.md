@@ -2,7 +2,7 @@
 
 The BTree type represents a tree using the b-tree algorithm.
 
-A BTree an is a self-balancing tree as its nodes are sorted in the inorder traversal.
+A BTree is a self-balancing tree as its nodes are sorted in the inorder traversal.
 The node is a set of elements pointing to its children, and a leaf has no children and nothing in itself.
 
 This implementation uses an order 3 BTree, this means:
@@ -23,7 +23,7 @@ This implementation uses an order 3 BTree, this means:
    .  ..  ..  ..   .       <-- (0) leafs
 ```
 
-The complexity of the operations:
+The complexity of the main operations:
 
 | Algorithm | Medium Case | Worst Case   |
 |-----------|-------------|--------------|
