@@ -13,11 +13,14 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- The BTree type, and associated operations. This module allows you to use a
+-- The BTree type, and associated operations.
+--
+-- This module allows you to use a
 -- BTree to store a set of values, and to efficiently lookup values in the set.
--- The BTree is a balanced binary tree, which means that the tree is more efficient
--- than a conventional list.
--- All BTree operations are performed in O(log n) time.
+-- The BTree is a balanced tree, which means that the tree is more efficient
+-- than a conventional binary tree.
+--
+-- Most of BTree operations are performed in O(log n) time.
 --
 -----------------------------------------------------------------------------
 
@@ -49,15 +52,15 @@ module Data.BTree (
 
 import           Control.Applicative ()
 import           Data.Foldable       (Foldable (..), toList)
+import           Data.Function       (on)
 import qualified Data.List           as L
 import           Data.Maybe          (isJust)
 import           Data.Monoid         ()
 import           Data.Traversable    ()
-import           Data.Function       (on)
 
 -- $setup
 -- Allow the use of some BTree functions in doctests.
--- >>> import Data.BTree ( insert, delete, search, fromList )
+-- >>> import Data.BTree
 
 
 infix  4 `member`
@@ -192,6 +195,7 @@ type Keep t n a = Tree n a -> t
 type Push t n a = Tree n a -> a -> Tree n a -> t
 
 -- | Inserts an element into a 'BTree'.
+--
 --   Inserts the element into the 'BTree' in inorder fashion.
 --
 --   +------------+---------------+---------------+
@@ -574,15 +578,15 @@ draw (BTree tree) = draw' tree
     draw' (Branch (Subtree' a b c d e)) = "(" ++ draw' a ++ " " ++ show b ++ " " ++ draw' c ++ " " ++ show d ++ " " ++ draw' e ++ ")"
     draw' Leaf = "."
 
--- | Return the 'BTree' as a list of lists, grouped by hights. 
--- 
+-- | Return the 'BTree' as a list of lists, grouped by hights.
+--
 -- @
 --
 --   a
 --  / \\    => [[a], [b,c]]
 -- b   c
 -- @
--- 
+--
 --   >>> levels (fromList [1,2,3,4,5,6,7])
 --   [[4],[2,6],[1,3,5,7]]
 levels :: forall a. Ord a => BTree a -> [[a]]
@@ -592,7 +596,7 @@ levels (BTree tree) = map (map snd) $ L.groupBy ((==) `on` fst) $ L.sort $ level
     levels' _ Leaf = []
     levels' n (Branch (Subtree a b c)) = levels' (n + 1) a ++ [(n, b)] ++ levels' (n + 1) c
     levels' n (Branch (Subtree' a b c d e)) = levels' (n + 1) a ++ [(n, b)] ++ levels' (n + 1) c ++ [(n, d)] ++ levels' (n + 1) e
-   
+
 
 -- | @since 1.0.0
 instance Foldable BTree where
