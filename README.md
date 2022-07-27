@@ -294,5 +294,5 @@ Which is an inline representation of the BTree.
 
 ## Roadmap
 
-- [ ] Make BTree instance of Monad
-- [ ] Make BTree instance of Applicative
+- [ ] Make BTree instance of Monad if it makes sense.
+- [ ] Make BTree instance of Applicative if it makes sense.

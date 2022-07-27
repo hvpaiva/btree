@@ -7,14 +7,20 @@ synopsis:            Concrete data type for a B tree algorithm.
 description:         Defines a data type, Tree, which is a B-Tree implementation of a Tree.
 author:              Highlander Paiva
 maintainer:          hvpaiva@icloud.com
+bug-reports:         https://github.com/hvpaiva/btree/issues/new?assignees=&labels=&template=bug_report.md&title=
 copyright:           2022 Highlander Paiva
 category:            Data, Tree
-stability:           stable
-build-type:          Simple
+stability:           experimental
+build-type:          Configure
 cabal-version:       >=1.8
 extra-source-files:  README.md
 
+source-repository head
+    type:     git
+    location: https://github.com/hvpaiva/btree.git
+
 library
+  default-language: Haskell2010
   exposed-modules: Data.BTree
   ghc-options:     -Wall
   build-depends:

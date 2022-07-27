@@ -7,7 +7,7 @@
 -- |
 -- Module      :  Data.BTree
 -- Copyright   :  (c) Highlander Paiva 2022
--- License     :  BSD-style (see the file libraries/LICENSE)
+-- License     :  BSD-style (see the LICENSE file)
 --
 -- Maintainer  :  hvpaiva@icloud.com
 -- Stability   :  experimental
@@ -38,23 +38,23 @@ module Data.BTree (
              , delete
              , search
              , height
+             , levels
 
-             -- * Traversal
+             -- * Traversals to list
              , preorder
              , inorder
              , postorder
-             , levels
 
-             -- * Ascii Drawing
+             -- * Drawing
              , draw
 ) where
 
 import           Control.Applicative ()
-import           Data.Foldable       
+import           Data.Foldable       (Foldable(..), find, toList)
 import           Data.Function       (on)
 import qualified Data.List           as L
 import           Data.Maybe          ()
-import           Data.Monoid         ()
+import           Data.Monoid         (Sum(..))
 import           Data.Traversable    ()
 
 -- $setup
@@ -70,7 +70,7 @@ import Test.QuickCheck
 
 The 'BTree' type represents a tree using the b-tree algorithm.
 
-A @'BTree' a@ is a self-balancing tree as its nodes are sorted in the inorder traversal. The
+A @'BTree' a@ is a self-balancing tree as its nodes are /traversed in-order/. The
 node is a set of elements pointing to its children, and a leaf has no children and nothing in itself.
 
 This implementation uses a order 3 'BTree', this means:
@@ -115,13 +115,10 @@ A @'BTree' 'Int'@ may be represented as:
 
 >>> let t = fromList [1,2,3,4,5,6,7]
 >>> t
-fromList [1,2,3,4,5,6,7]
+"(((. 1 .) 2 (. 3 .)) 4 ((. 5 .) 6 (. 7 .)))"
 
 >>> let n = insert 8 t
 >>> n
-fromList [1,2,3,4,5,6,7,8]
-
->>> draw n
 "(((. 1 .) 2 (. 3 .)) 4 ((. 5 .) 6 (. 7 . 8 .)))"
 
 @since 1.0.0
@@ -202,13 +199,10 @@ type Push t n a = Tree n a -> a -> Tree n a -> t
 --
 --   >>> let t = insert 1 empty
 --   >>> t
---   fromList [1]
---   >>> draw t
 --   "(. 1 .)"
+-- 
 --   >>> let n = insert 2 t
 --   >>> n
---   fromList [1,2]
---   >>> draw n
 --   "(. 1 . 2 .)"
 --
 --   @since 1.0.0
@@ -269,11 +263,8 @@ data Shrunk (n :: Natural) a where
 --
 --   >>> let t = fromList [1,2,3,4,5,6,7]
 --   >>> let n = delete 3 t
---   >>> draw n
---   "((. 1 . 2 .) 4 (. 5 .) 6 (. 7 .))"
---
 --   >>> n
---   fromList [1,2,4,5,6,7]
+--   "((. 1 . 2 .) 4 (. 5 .) 6 (. 7 .))"
 --
 --   @since 1.0.0
 delete :: forall a. Ord a => a -> BTree a -> BTree a
@@ -349,13 +340,15 @@ search x = find (==x)
 --
 --   >>> let t = empty
 --   >>> t
---   fromList []
+--   "."
 --
---   >>> insert 1 t
---   fromList [1]
+--   >>> let n = insert 1 t
+--   >>> n
+--   "(. 1 .)"
 --
---   >>> insert 2 empty
---   fromList [2]
+--   >>> let j = insert 2 empty
+--   >>> j
+--   "(. 2 .)"
 --
 --   @since 1.0.0
 empty :: BTree a
@@ -365,7 +358,7 @@ empty = BTree Leaf
 --
 --   >>> let t = singleton 1
 --   >>> t
---   fromList [1]
+--   "(. 1 .)"
 --
 --   @since 1.0.0
 singleton :: Ord a => a -> BTree a
@@ -375,9 +368,6 @@ singleton x = insert x empty
 --
 --   >>> let t = fromList [1,2,3,4,5,6,7]
 --   >>> t
---   fromList [1,2,3,4,5,6,7]
---
---   >>> draw t
 --   "(((. 1 .) 2 (. 3 .)) 4 ((. 5 .) 6 (. 7 .)))"
 --
 --   @since 1.0.0
@@ -544,6 +534,8 @@ draw (BTree tree) = draw' tree
     draw' Leaf = "."
 
 -- | Return the 'BTree' as a list of lists, grouped by hights.
+-- 
+-- It will start by the root level and then go down to the branches.
 --
 -- @
 --
@@ -554,6 +546,8 @@ draw (BTree tree) = draw' tree
 --
 --   >>> levels (fromList [1,2,3,4,5,6,7])
 --   [[4],[2,6],[1,3,5,7]]
+--
+--   @since 1.0.0
 levels :: forall a. Ord a => BTree a -> [[a]]
 levels (BTree tree) = map (map snd) $ L.groupBy ((==) `on` fst) $ L.sort $ levels' 0 tree
   where
@@ -562,24 +556,40 @@ levels (BTree tree) = map (map snd) $ L.groupBy ((==) `on` fst) $ L.sort $ level
     levels' n (Branch (Subtree a b c)) = levels' (n + 1) a ++ [(n, b)] ++ levels' (n + 1) c
     levels' n (Branch (Subtree' a b c d e)) = levels' (n + 1) a ++ [(n, b)] ++ levels' (n + 1) c ++ [(n, d)] ++ levels' (n + 1) e
 
+fmapT :: (a -> b) -> BTree a -> BTree b
+fmapT f (BTree tree) = BTree $ fmap' f tree
+  where
+    fmap' :: (a -> b) -> Tree n a -> Tree n b
+    fmap' f' (Branch (Subtree a b c)) = Branch (Subtree (fmap' f' a) (f' b) (fmap' f' c))
+    fmap' f' (Branch (Subtree' a b c d e)) = Branch (Subtree' (fmap' f' a) (f' b) (fmap' f' c) (f' d) (fmap' f' e))
+    fmap' _ Leaf = Leaf
 
--- | @since 1.0.0
-instance Foldable BTree where
-  foldMap = foldm
+foldMapT :: forall m a. Monoid m => (a -> m) -> BTree a -> m
+foldMapT f (BTree t) = fm t
+  where
+      fm :: forall n. Tree n a -> m
+      fm (Branch (Subtree a b c))      = fm a <> f b <> fm c
+      fm (Branch (Subtree' a b c d e)) = fm a <> f b <> fm c <> f d <> fm e
+      fm Leaf                          = mempty
+
+instance Functor BTree where fmap = fmapT
+
+instance Foldable BTree where foldMap = foldMapT
+-- | The default 'Traversable' instance is implemented in a in-order traversal.
+--
+--   >>> let incOdd n = if odd n then Just $ n + 1 else Nothing
+--   >>> traverse incOdd $ fromList [1,3,5,7,9]
+--   Just ("((. 2 .) 4 (. 6 .) 8 (. 10 .))")
+instance Traversable BTree where
+  traverse f (BTree tree) = BTree <$> traverse' f tree
     where
-      foldm :: forall m a. Monoid m => (a -> m) -> BTree a -> m
-      foldm f (BTree t) = fm t
-        where
-          fm :: forall n. Tree n a -> m
-          fm (Branch (Subtree a b c))      = fm a <> f b <> fm c
-          fm (Branch (Subtree' a b c d e)) = fm a <> f b <> fm c <> f d <> fm e
-          fm Leaf                          = mempty
+      traverse' :: forall n a b f. Applicative f => (a -> f b) -> Tree n a -> f (Tree n b)
+      traverse' f' (Branch (Subtree a b c)) = Branch <$> (Subtree <$> traverse' f' a <*> f' b <*> traverse' f' c)
+      traverse' f' (Branch (Subtree' a b c d e)) = Branch <$> (Subtree' <$> traverse' f' a <*> f' b <*> traverse' f' c <*> f' d <*> traverse' f' e)
+      traverse' _ Leaf = pure Leaf
 
--- | @since 1.0.0
 instance Show a => Show (BTree a) where
-  showsPrec n t = showParen (n > 10) $ showString "fromList " . shows (toList t)
-  
----- Internal Utility Functions ----------------------------------------------------------------------------------------
+  showsPrec n t = showParen (n > 10) $ shows (draw t)
 
 -- | Utility function to select the correct element given a comparison of two other elements.
 select :: Ord a => a -> a -> p -> p -> p -> p
