@@ -37,7 +37,6 @@ module Data.BTree (
              , insert
              , delete
              , search
-             , member
              , height
 
              -- * Traversal
@@ -51,19 +50,16 @@ module Data.BTree (
 ) where
 
 import           Control.Applicative ()
-import           Data.Foldable       (Foldable (..), toList)
+import           Data.Foldable       
 import           Data.Function       (on)
 import qualified Data.List           as L
-import           Data.Maybe          (isJust)
+import           Data.Maybe          ()
 import           Data.Monoid         ()
 import           Data.Traversable    ()
 
 -- $setup
 -- Allow the use of some BTree functions in doctests.
 -- >>> import Data.BTree
-
-
-infix  4 `member`
 
 {-
 -- just for testing
@@ -281,28 +277,28 @@ data Shrunk (n :: Natural) a where
 --
 --   @since 1.0.0
 delete :: forall a. Ord a => a -> BTree a -> BTree a
-delete x (BTree tree) = find tree BTree shrink
+delete x (BTree tree) = find' tree BTree shrink
   where
     shrink :: forall n. Shrunk n a -> BTree a
     shrink (H t) = BTree t
 
-    find :: forall n t. Tree n a -> Keep t n a -> Pull t n a -> t
-    find Leaf keep _ = keep Leaf
-    find (Branch (Subtree a b c)) keep pull = select x b xltb xeqb xgtb
+    find' :: forall n t. Tree n a -> Keep t n a -> Pull t n a -> t
+    find' Leaf keep _ = keep Leaf
+    find' (Branch (Subtree a b c)) keep pull = select x b xltb xeqb xgtb
       where
         xltb, xeqb, xgtb :: t
-        xltb = find a (\k -> keep (branch k b c)) (\p -> mrgl p b c)
-        xgtb = find c (keep . branch a b) (mrg2r keep pull a b)
+        xltb = find' a (\k -> keep (branch k b c)) (\p -> mrgl p b c)
+        xgtb = find' c (keep . branch a b) (mrg2r keep pull a b)
         xeqb = replace a (\k r -> keep (branch k r c)) (\p r -> mrgl p r c) (pull (H a))
 
         mrgl :: forall p. ('Succ p ~ n) => Shrunk p a -> a -> Tree p a -> t
         mrgl (H a') b' (Branch (Subtree c' d e)) = pull (H (branch' a' b' c' d e))
         mrgl (H a') b' (Branch (Subtree' c' d e f g)) = keep (branch (branch a' b' c') d (branch e f g))
-    find (Branch (Subtree' a b c d e)) keep _ = select' x b d xltb xeqb xbtw xeqd xgtd
+    find' (Branch (Subtree' a b c d e)) keep _ = select' x b d xltb xeqb xbtw xeqd xgtd
       where
-        xltb = find a (\k -> keep (branch' k b c d e)) (\p -> mrgl p b c d e)
-        xbtw = find c (\k -> keep (branch' a b k d e)) (\p -> mrgm a b p d e)
-        xgtd = find e (keep . branch' a b c d) (mrg3r keep a b c d)
+        xltb = find' a (\k -> keep (branch' k b c d e)) (\p -> mrgl p b c d e)
+        xbtw = find' c (\k -> keep (branch' a b k d e)) (\p -> mrgm a b p d e)
+        xgtd = find' e (keep . branch' a b c d) (mrg3r keep a b c d)
         xeqb = replace a (\k r -> keep (branch' k r c d e)) (\p r -> mrgl p r c d e) (keep (branch c d e))
         xeqd = replace c (\k r -> keep (branch' a b k r e)) (\p r -> mrgm a b p r e) (keep (branch a b c))
 
@@ -345,24 +341,7 @@ delete x (BTree tree) = find tree BTree shrink
 --
 --   @since 1.0.0
 search :: forall a. Ord a => a -> BTree a -> Maybe a
-search x (BTree tree) = search' tree
-  where
-    search' :: forall n. Tree n a -> Maybe a
-    search' Leaf = Nothing
-    search' (Branch (Subtree a b c)) = select x b xltb xeqb xgtb
-      where
-        xltb, xeqb, xgtb :: Maybe a
-        xltb = search' a
-        xeqb = Just x
-        xgtb = search' c
-    search' (Branch (Subtree' a b c d e)) = select' x b d xltb xeqb xbtw xeqd xgtd
-      where
-        xltb, xeqb, xbtw, xeqd, xgtd :: Maybe a
-        xltb = search' a
-        xeqb = Just x
-        xbtw = search' c
-        xeqd = Just x
-        xgtd = search' e
+search x = find (==x)
 
 -- | A empty 'BTree'. It consists of a single leaf.
 --
@@ -404,20 +383,6 @@ singleton x = insert x empty
 --   @since 1.0.0
 fromList :: Ord a => [a] -> BTree a
 fromList = L.foldl' (flip insert) empty
-
--- | Checks if the element is in the 'BTree'.
---
---   >>> let t = fromList [1,2,3,4,5,6,7]
---
---   >>> 3 `member` t
---   True
---
---   >>> member 8 t
---   False
---
---   @since 1.0.0
-member :: forall a. Ord a => a -> BTree a -> Bool
-member x t = isJust $ search x t
 
 -- | Return the 'BTree' as a list in a in-order traversal.
 --
@@ -613,7 +578,7 @@ instance Foldable BTree where
 -- | @since 1.0.0
 instance Show a => Show (BTree a) where
   showsPrec n t = showParen (n > 10) $ showString "fromList " . shows (toList t)
-
+  
 ---- Internal Utility Functions ----------------------------------------------------------------------------------------
 
 -- | Utility function to select the correct element given a comparison of two other elements.

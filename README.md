@@ -33,6 +33,8 @@ The complexity of the main operations:
 
 ## Instalation
 
+> The package may not be at hackage yet.
+
 ```haskell
 $> cabal install btree
 ```
@@ -40,10 +42,8 @@ $> cabal install btree
 then you import the module:
 
 ```haskell
-import qualified Data.BTree as T
+import Data.BTree
 ```
-
-> This module may use some common function names, so may be useful to import as qualified.
 
 ## Constructors
 
@@ -135,19 +135,6 @@ Just 3
 
 >>> search 6 t
 Nothing
-```
-
-### member :: forall a. Ord a => a -> BTree a -> Bool infix 4 #
-
-Checks if the element is in the BTree.
-
-```haskell
->>> let t = fromList [1,2,3,4,5,6,7]
->>> 3 `member` t
-True
-
->>> member 8 t
-False
 ```
 
 ### height :: forall a. BTree a -> Int #
