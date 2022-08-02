@@ -50,11 +50,11 @@ module Data.BTree (
 ) where
 
 import           Control.Applicative ()
-import           Data.Foldable       (Foldable(..), find, toList)
+import           Data.Foldable       (find)
 import           Data.Function       (on)
 import qualified Data.List           as L
 import           Data.Maybe          ()
-import           Data.Monoid         (Sum(..))
+import           Data.Monoid         ()
 import           Data.Traversable    ()
 
 -- $setup
@@ -200,7 +200,7 @@ type Push t n a = Tree n a -> a -> Tree n a -> t
 --   >>> let t = insert 1 empty
 --   >>> t
 --   "(. 1 .)"
--- 
+--
 --   >>> let n = insert 2 t
 --   >>> n
 --   "(. 1 . 2 .)"
@@ -534,7 +534,7 @@ draw (BTree tree) = draw' tree
     draw' Leaf = "."
 
 -- | Return the 'BTree' as a list of lists, grouped by hights.
--- 
+--
 -- It will start by the root level and then go down to the branches.
 --
 -- @

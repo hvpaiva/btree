@@ -33,10 +33,8 @@ The complexity of the main operations:
 
 ## Instalation
 
-> The package may not be at hackage yet.
-
 ```haskell
-$> cabal install btree
+$> cabal install btree-algorithm
 ```
 
 then you import the module:
@@ -279,20 +277,3 @@ Which is an inline representation of the BTree.
 >>> draw (fromList [1,2,3,4,5,6,7])
 "((((. 1 .) 2 (. 3 .)) 4 ((. 5 .) 6 (. 7 .))))"
 ```
-
-## Data.BTree
-
-```
--- Module      :  Data.BTree
--- Copyright   :  (c) Highlander Paiva 2022
--- License     :  BSD-style (see the file /LICENSE)
---
--- Maintainer  :  hvpaiva@icloud.com
--- Stability   :  experimental
--- Portability :  portable
-```
-
-## Roadmap
-
-- [ ] Make BTree instance of Monad if it makes sense.
-- [ ] Make BTree instance of Applicative if it makes sense.

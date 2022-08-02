@@ -8,7 +8,7 @@ and this project adheres to the
 
 ## Unreleased
 
-### 1.0.0 - 2022-07-27 [Release Candidate]
+### 0.1.0 - 2022-08-02 [Release Candidate]
 
 ### Added
 
