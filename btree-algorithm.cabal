@@ -9,7 +9,7 @@ author:              Highlander Paiva
 maintainer:          hvpaiva@icloud.com
 bug-reports:         https://github.com/hvpaiva/btree-algorithm/issues/new?assignees=&labels=&template=bug_report.md&title=
 copyright:           2022 (c) Highlander Paiva
-category:            src.Data, Tree
+category:            Data, Tree
 stability:           experimental
 build-type:          Simple
 cabal-version:       >=1.10
