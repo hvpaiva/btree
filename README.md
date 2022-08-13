@@ -33,7 +33,9 @@ The complexity of the main operations:
 
 ## Instalation
 
-```haskell
+> IMPORTANT: This library is in Candidate only in Hackage, so the command bellow will not work yet.
+
+```bash
 $> cabal install btree-algorithm
 ```
 
